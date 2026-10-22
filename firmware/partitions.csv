@@ -1,0 +1,8 @@
+# 4 MB flash, OTA-capable layout (dual app slots + spiffs session logs)
+# Name,   Type, SubType, Offset,  Size,     Flags
+nvs,      data, nvs,     0x9000,  0x6000,
+phy_init, data, phy,     0xf000,  0x1000,
+otadata,  data, ota,     0x10000, 0x2000,
+ota_0,    app,  ota_0,   0x12000, 1536K,
+ota_1,    app,  ota_1,   ,        1536K,
+spiffs,   data, spiffs,  ,        960K,

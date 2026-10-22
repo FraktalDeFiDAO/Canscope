@@ -1,0 +1,23 @@
+# --- Node / web ---
+node_modules/
+dist/
+
+# --- Rust / firmware ---
+target/
+*.rs.bk
+
+# --- Android ---
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.cxx/
+
+# --- Binaries ---
+*.apk
+*.zip
+
+# --- OS ---
+.DS_Store
+Thumbs.db
