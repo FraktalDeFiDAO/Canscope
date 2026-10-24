@@ -37,6 +37,10 @@ class MainActivity : ComponentActivity() {
                 val nav = rememberNavController()
                 val scope = rememberCoroutineScope()
 
+                // sync persisted theme choice into the palette
+                val themeIdx by vm.themeIndex.collectAsState()
+                SideEffect { ThemeState.index = themeIdx }
+
                 // BLE runtime permissions (Android 12+) — requested once up front.
                 val permLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestMultiplePermissions()
@@ -57,6 +61,10 @@ class MainActivity : ComponentActivity() {
                 ) { padding ->
                     NavHost(nav, startDestination = "dashboard", modifier = Modifier.padding(padding)) {
                         composable("dashboard") { DashboardScreen(vm) }
+                        composable("graphs") { GraphsScreen(vm) }
+                        composable("hud") { HudScreen(vm) }
+                        composable("trip") { TripScreen(vm) }
+                        composable("perf") { PerfScreen(vm) }
                         composable("pids") { PidExplorerScreen(vm) }
                         composable("sniffer") { SnifferScreen(vm) }
                         composable("transmit") { TransmitScreen(vm) }
@@ -72,6 +80,10 @@ class MainActivity : ComponentActivity() {
 
 private val tabs = listOf(
     "dashboard" to "GAUGES",
+    "graphs" to "GRAPHS",
+    "hud" to "HUD",
+    "trip" to "TRIP",
+    "perf" to "PERF",
     "pids" to "PIDS",
     "sniffer" to "SNIFFER",
     "transmit" to "TX",
