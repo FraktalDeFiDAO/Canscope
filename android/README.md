@@ -33,3 +33,15 @@ BLE scan/connect (Android 12+ runtime), legacy BT + location for API ≤ 30, INT
 - Full web parity: ISO-TP reassembly **and** segmentation (flow control `0x30` answers first frames), Mode 01/02/06/07/09/0A, PID support-bitmask discovery, DBC decoding in the sniffer, passive VIN sniffing (ISO 3780 check digit), session record/playback/server upload, auto-reconnect with backoff, TWAI bus-health status.
 - Unit tests: `./gradlew testDebugUnitTest` covers ISO-TP, VIN validation/sniffing, and DBC parsing (`app/src/test/`).
 - Untested here (no Android SDK in this environment): expect a normal first-build fix round.
+
+## Torque-style extras
+
+- **Gauges tab**: round dial gauges (bezel, numbered scale, warn/crit zones, needle) plus a theme
+  picker — MISSION (cyan), TORQUE (amber), NIGHT (red), PHOSPHOR (green); persisted.
+- **Graphs tab**: plot up to 4 PIDs over the last 48 s with min/max/current legend.
+- **HUD tab**: fullscreen windshield display — giant speed, RPM bar, clock; MIRROR flip and
+  keep-screen-on.
+- **Trip tab**: distance, fuel used (fuel-rate PID or MAF estimate), instant/avg economy
+  (L/100 km or MPG), avg/max speed, drive time; resettable.
+- **Perf tab**: 0–60 mph, 0–100/0–200 km/h, 60–120, ⅛/¼ mile and 100–0 braking timers with
+  arm/cancel and persisted best times.

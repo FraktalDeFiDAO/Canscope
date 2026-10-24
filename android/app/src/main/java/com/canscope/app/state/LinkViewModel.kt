@@ -73,9 +73,95 @@ class LinkViewModel(app: Application) : AndroidViewModel(app) {
     // Loaded DBC for sniffer decoding
     val dbc = MutableStateFlow<Dbc?>(null)
 
+    // --- Torque-style extras: theme, trip computer, perf timers ---
+    val themeIndex = MutableStateFlow(prefs.getInt("theme", 0))
+    fun setTheme(i: Int) {
+        themeIndex.value = i
+        prefs.edit().putInt("theme", i).apply()
+    }
+
+    private val trip = TripRecorder()
+    val tripStats = MutableStateFlow(TripStats.ZERO)
+    fun resetTrip() {
+        trip.reset()
+        tripStats.value = TripStats.ZERO
+    }
+
+    private val perf = PerfTimer()
+    val perfTargetIndex = MutableStateFlow(
+        prefs.getInt("perfTarget", 0).coerceIn(0, PERF_TARGETS.lastIndex))
+    val perfPhase = MutableStateFlow(PerfPhase.IDLE)
+    val perfElapsed = MutableStateFlow(0.0)
+    val perfResults = MutableStateFlow<List<PerfResult>>(emptyList())
+    val perfBest = MutableStateFlow(loadPerfBest())
+
+    fun setPerfTarget(i: Int) {
+        perfTargetIndex.value = i.coerceIn(0, PERF_TARGETS.lastIndex)
+        prefs.edit().putInt("perfTarget", perfTargetIndex.value).apply()
+        if (perfPhase.value != PerfPhase.IDLE) cancelPerf()
+    }
+
+    fun armPerf() {
+        perf.arm(PERF_TARGETS[perfTargetIndex.value])
+        perfPhase.value = PerfPhase.ARMED
+        perfElapsed.value = 0.0
+    }
+
+    fun cancelPerf() {
+        perf.cancel()
+        perfPhase.value = PerfPhase.IDLE
+        perfElapsed.value = 0.0
+    }
+
+    fun resetPerfBest() {
+        perfBest.value = emptyMap()
+        perfResults.value = emptyList()
+        prefs.edit().remove("perfBest").apply()
+    }
+
+    private fun loadPerfBest(): Map<String, Double> {
+        val raw = prefs.getString("perfBest", "") ?: return emptyMap()
+        return raw.split(";").mapNotNull {
+            val p = it.split("|")
+            if (p.size == 2) p[0] to (p[1].toDoubleOrNull() ?: return@mapNotNull null) else null
+        }.toMap()
+    }
+
+    private fun savePerfBest() {
+        prefs.edit().putString("perfBest",
+            perfBest.value.entries.joinToString(";") { "${it.key}|${it.value}" }).apply()
+    }
+
+    /** 5 Hz sampler feeding the trip computer and performance timers. */
+    private fun sampleExtras() {
+        val now = System.currentTimeMillis()
+        val dt = 0.2
+        val speed = pidValues.value[0x0D]
+        tripStats.value = trip.sample(speed, pidValues.value[0x5E], pidValues.value[0x10], dt)
+        val v = speed ?: 0.0
+        val distDeltaM = v / 3.6 * dt
+        perfElapsed.value = perf.elapsed(now)
+        val done = perf.sample(v, distDeltaM, now)
+        perfPhase.value = perf.phase
+        if (done != null) {
+            val label = perf.currentTarget.label
+            perfResults.value = (listOf(PerfResult(label, done, now)) + perfResults.value).take(50)
+            val curBest = perfBest.value[label]
+            if (curBest == null || done < curBest) {
+                perfBest.value = perfBest.value + (label to done)
+                savePerfBest()
+            }
+        }
+    }
+
     private var link: Link = SimLink(viewModelScope)
 
-    init { observe(link) }
+    init {
+        observe(link)
+        viewModelScope.launch {
+            while (true) { sampleExtras(); delay(200) }
+        }
+    }
 
     private fun observe(l: Link) {
         viewModelScope.launch {
